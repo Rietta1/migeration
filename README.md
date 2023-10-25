@@ -7,9 +7,11 @@ You would learn how to run application workload for production by using lift and
 ### The Scenario
 
 - We have application services which are running on physical/virtual machines/
+  
+![1a](https://github.com/Rietta1/migeration/assets/101978292/5a3bcb36-f896-4f9e-a493-83a84bc66eac)
 
-- All these work load running on your local data center
-
+- All these work load running on your local server
+  
 ### Localhost Prerequisites 
 
 - Github - choco/brew install git -y
@@ -44,6 +46,9 @@ You would learn how to run application workload for production by using lift and
 
 Users will access our website by using the URL and that URL will be pointed to an endpoint which its entry will be mentioned in godaddy DNS.
 
+![Screenshot 2023-10-25 135211](https://github.com/Rietta1/migeration/assets/101978292/15be6fa9-4d04-400d-b76f-06b02ed84af8)
+
+
 - Users of the app will access it throuhg a secured endpoint url(https://) and each request will be recieved by a load balancer which only accepts https traffic.
 
 - The secured certficate ssl will be gotten from ACM
@@ -62,8 +67,6 @@ Users will access our website by using the URL and that URL will be pointed to a
 - So Tomcat instance will access backend servers with the name which is gotten from route 53 private dns with the private ip addr will be gotten as well.
 
 - The backend ec2 instances server will (rmq,mec,mysql) will all be in placed in another sercurity group
-
-
 
 
 ### FLOW OF EXECUTION
@@ -107,7 +110,6 @@ Custom TCP, port: 8080 , allow : only from my ipp addr , description : allows ss
 
 ```
 
-
 - Third ,create a security group for the backend services(rmq,mc,mysql): name `mig-db-sg` , give description *Security group for mig backend serivces*
 
 - Give inbound rules of 
@@ -134,6 +136,7 @@ save it
 3. Create key pairs : go to key pair, create keypair and neame ot `mig-prod-key` and download it to your system
 
 4. Lunch Instances with user data [BASH SCRIPTS]
+   
 - go to this (github-link)[https://github.com/Rietta1/migeration.git] and clone it locally, run `git checkout aws-LiftAndshift` to change branch...
 
 - go to the folder userdata and you will see the scripts to implement each service on the ec2 instance 
@@ -266,6 +269,8 @@ ls /var/lib/tomcat9
 
 Go to `rc/main/resources/application.properties`
 and add the .mig.in to the backend names
+
+![aa](https://github.com/Rietta1/migeration/assets/101978292/f180efc1-17f0-41ab-9c97-1f09cf4fde32)
 
 
 ## 2 Build Artifact
