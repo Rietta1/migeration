@@ -81,7 +81,7 @@ Users will access our website by using the URL and that URL will be pointed to a
 11. Verify
 12. Build Autoscaling group for tomact instances
 
-## Hands on
+## Setup
 
 1. Login to AWS Account
 
@@ -262,15 +262,20 @@ ls /var/lib/tomcat9
 
 - Do same for mc01 and rmq01
 
+- add mig.in to src/main/resources/application.properties
 
+Go to `rc/main/resources/application.properties`
+and add the .mig.in to the backend names
 
-6. Build Application from source code
+## Build Artifact
+
+1. Build Application from source code
 
 - We would build the artifact locally on our vscode, push it to s3 bucket and then deploy it to our tomcat server
 
-- add mig.in to src/main/resources/application.properties
 
 
+- go tho the folder with `pom.xml` and build your artifact with maven
 
-
-# Database
+- run `mvn install` to build the artifact
+- A `target` file is created with a `vprofile.v2.war` inside, 
