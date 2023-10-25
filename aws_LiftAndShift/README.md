@@ -81,7 +81,7 @@ Users will access our website by using the URL and that URL will be pointed to a
 11. Verify
 12. Build Autoscaling group for tomact instances
 
-## Setup
+## 1 Setup
 
 1. Login to AWS Account
 
@@ -267,15 +267,108 @@ ls /var/lib/tomcat9
 Go to `rc/main/resources/application.properties`
 and add the .mig.in to the backend names
 
-## Build Artifact
+
+## 2 Build Artifact
 
 1. Build Application from source code
 
 - We would build the artifact locally on our vscode, push it to s3 bucket and then deploy it to our tomcat server
 
-
-
 - go tho the folder with `pom.xml` and build your artifact with maven
 
 - run `mvn install` to build the artifact
-- A `target` file is created with a `vprofile.v2.war` inside, 
+
+- A `target` file is created with a `vprofile.v2.war` inside.
+
+
+
+2. Push the artifacts into s3 bucket
+
+- Go to IAM on the console and the USERS,=> click on ADD USERS,=> create a user called s3admin,=> attach policy directly `amazons3fullaccess` and create user
+
+- Go to USERS,=> SECURITY,=> CREATE ACCESS KEY,=> use CLI interface, create access key and download it.
+
+- Configure your aws cli in your vscode `aws configure` add the keys details.
+
+- list buckets `aws s3 ls`
+
+- now create a bucket from the cli `aws s3 mb s3://mig-vpro-arts`
+*remember bucket names are like domain names, one name can be owned by one person world wide*
+
+- copy the artifacts to the bucket `aws s3 cp target/vprofile-v2.war` s3://mig-vpro-arts/
+
+*you could check your s3 bucket and see the artifacts there was the upload is completed*
+
+- Now download the artifact into your tomcat ec2 instance
+
+*we can use IAM access keys configuration in the instance, but there is a better way*
+
+- we create an IAM ROLE, just like we created a user , and attach this role to our instance 
+
+- go to IAM,create IAM ROLE,=> AWS service, => EC2 , search for the policy `amazons3fullaccess` => give role a name `mig-vprof-s3`, then create role.
+
+- go to the instance , ACTION => SECURITY => MODIFY IAM ROLE, select the role created `mig-vprof-s3`, => UPDATE IAM ROLE
+
+- ssh into the tomcat server , 
+
+```sh
+
+sudo -i
+apt update 
+install awscli -y
+
+aws s3 ls
+
+#copy vprofile-v2.war from the s3 bucket to the tmp folder in the instance
+aws s3 cp s3://mig-vpr-arts/vprofile-v2.war /tmp/
+
+systemctl stop tomcat9
+rm -rf /var/lib/tomcat9/webapps/ROOT
+cp /tmp/vprofile-v2.war /var/lib/tomcat9/webbapps/ROOT.war
+systemctl start tomcat9
+ls /var/lib/tomcat9/webapps
+cat /var/lib/tomcat9/webapps/ROOT/WEB-INF/classes/application.properties
+```
+
+
+## 3 Configure Load-Balancer and DNS
+
+1. DNS / Amazon Certificate Manager (ACM)
+
+- Implementation of the SSL and configuration of Domain with Route53
+Create a hosted zone and copy the namesavers details to where your domain name ns
+
+- Go to AWS Certificate Manager and create an ssl certificate domain name = rietta.online click on add another name to this certificate = *.rietta.online
+
+
+2. Load balancer
+
+We are going to create an Application load balancer, so we create a target group first.
+
+- go to LOAD BALANCER, => TARGET GROUP, => NAME: mig-app-TG, => PROTOCOL; HTTP:8080 , => HEALTH CHECK: /login , => click OVERRIDE : 8080, => HEALTHY TRESHOLD:3, => select the APP01 instance, => click INCLUDE AS PENDING BELOW, => create target group.
+
+- go to LOAD BALANCER and create, select APPLICATION LOAD BALANCER, => create, => NAME: mig-prod-ELB , => INTERNET FACING, => IPV4, => select ALL THE ZONES, SECURITY GROUP: mig-ELB-sg , => LISTENER; HTTPS:443:mig-app-TG, select the ACM CERT:rietta.online, => add another LISTENER; HTTP:80:mig-app-TG, then create load balancer
+
+3. DNS
+
+- copy the endpoint DNS NAME and go to ROUTE53 , create a record with record type as CNAME, => SUBDOMAIN:migapp(.rietta.online) and add the DNS NAME copied
+
+
+- ping migapp.rietta.online, curl migapp.rietta.online, in the terminal to check
+
+- go to the url and login, username:admin-vp , password: admin-vp
+
+
+## 4 Auto Scaling 
+
+1. Create an AMI 
+
+- go to the ec2 instance of the TOMCAT SERVER(app01), ACTION  => IMAGE => CREATE IMAGE. give it a name `mig-app-image`
+
+- Create lunch template, go to AUTO SCALING GROUP, => NAME: mig-app-LC, select the AMI created, => INSTANCE TYPE: t2.micro, => IAM ROLE: use the one created, enable monitoring, use mig-app-SG, add key and create the lunch template
+
+- Create auto scaling group , select the launch template created , => select all the subnets, => enable load balancer and its health check, => capacit, 1 ,1, 4, => Target tracking scaling policy, 50 => enable instance scale-in protection, => add notifications , => tags:mig-app, project :mig, owner:loretta, => create
+
+- terminate previous tomcat server(app01)
+
+- verify again by login in , username:adim-vp , password:admin-vp
